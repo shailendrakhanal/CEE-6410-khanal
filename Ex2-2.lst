@@ -1,0 +1,226 @@
+GAMS 47.6.0  c2de9d6d Sep 12, 2024          WEX-WEI x86 64bit/MS Windows - 09/24/24 16:03:32 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+      CEE 6410 - Water Resources Systems Analysis
+      Example 2.1 from Bishop Et Al Text (https://digitalcommons.usu.edu/ecstatic_all/76/)
+       
+      THE PROBLEM:
+       
+      An irrigated farm can be planted in two crops:  eggplants and tomatoes.  Data are as fol-lows:
+       
+      Seasonal Resource
+      Inputs or Profit        Crops        Resource
+      Availability
+              Eggplant        Tomatoes
+      Water        1x103 gal/plant        2x103 gal/plant        4x106 gal/year
+      Land        4 ft2/plant        3 ft2/plant        1.2x104 ft2
+      Labour      5 hours/plant      2.5 hours/plant    17,500 hours
+      Profit/plant        $6        $7
+       
+                      Determine the optimal planting for the two crops.
+       
+      THE SOLUTION:
+      Uses General Algebraic Modeling System to Solve this Linear Program
+       
+      David E Rosenberg
+      david.rosenberg@usu.edu
+      September 15, 2015
+  27   
+  28  * 1. DEFINE the SETS
+  29  SETS plnt crops growing /Eggplant, Tomatoes/
+  30       res resources /Water, Land, Labor/;
+  31   
+  32  * 2. DEFINE input data
+  33  PARAMETERS
+  34     c(plnt) Objective function coefficients ($ per plant)
+  35           /Eggplant 6,
+  36           Tomatoes 7/
+  37     b(res) Right hand constraint values (per resource)
+  38            /Water 4000000,
+  39             Land  12000,
+  40             Labor 17500/;
+  41   
+  42  TABLE A(plnt,res) Left hand side constraint coefficients
+  43                   Water    Land   Labor
+  44   Eggplant        1000      4     5
+  45   Tomatoes        2000      3     2.5;
+  46   
+  47  * 3. DEFINE the variables
+  48  VARIABLES X(plnt) plants planted (Number)
+  49            VPROFIT  total profit ($);
+  50   
+  51  * Non-negativity constraints
+  52  POSITIVE VARIABLES X;
+  53   
+  54  * 4. COMBINE variables and data in equations
+  55  EQUATIONS
+  56     PROFIT Total profit ($) and objective function value
+  57     RES_CONSTRAIN(res) Resource Constraints;
+  58   
+  59  PROFIT..                 VPROFIT =E= SUM(plnt,c(plnt)*X(plnt));
+  60  RES_CONSTRAIN(res) ..    SUM(plnt,A(plnt,res)*X(plnt)) =L= b(res);
+  61   
+  62  * 5. DEFINE the MODEL from the EQUATIONS
+  63  MODEL PLANTING /PROFIT, RES_CONSTRAIN/;
+  64  *Altnerative way to write (include all previously defined equations)
+  65  *MODEL PLANTING /ALL/;
+  66   
+  67  * 6. SOLVE the MODEL
+  68  * Solve the PLANTING model using a Linear Programming Solver (see File=>Options=>Solvers)
+  69  *     to maximize VPROFIT
+  70  SOLVE PLANTING USING LP MAXIMIZING VPROFIT;
+  71   
+  72  * 6. CLick File menu => RUN (F9) or Solve icon and examine solution report in .LST file
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  47.6.0 c2de9d6d WEX-WEI
+GAMS 47.6.0  c2de9d6d Sep 12, 2024          WEX-WEI x86 64bit/MS Windows - 09/24/24 16:03:32 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE PLANTING Using LP From line 70
+
+
+---- PROFIT  =E=  Total profit ($) and objective function value
+
+PROFIT..  - 6*X(Eggplant) - 7*X(Tomatoes) + VPROFIT =E= 0 ; (LHS = 0)
+     
+
+---- RES_CONSTRAIN  =L=  Resource Constraints
+
+RES_CONSTRAIN(Water)..  1000*X(Eggplant) + 2000*X(Tomatoes) =L= 4000000 ; (LHS = 0)
+     
+RES_CONSTRAIN(Land)..  4*X(Eggplant) + 3*X(Tomatoes) =L= 12000 ; (LHS = 0)
+     
+RES_CONSTRAIN(Labor)..  5*X(Eggplant) + 2.5*X(Tomatoes) =L= 17500 ; (LHS = 0)
+     
+GAMS 47.6.0  c2de9d6d Sep 12, 2024          WEX-WEI x86 64bit/MS Windows - 09/24/24 16:03:32 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE PLANTING Using LP From line 70
+
+
+---- X  plants planted (Number)
+
+X(Eggplant)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+       -6       PROFIT
+     1000       RES_CONSTRAIN(Water)
+        4       RES_CONSTRAIN(Land)
+        5       RES_CONSTRAIN(Labor)
+
+X(Tomatoes)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+       -7       PROFIT
+     2000       RES_CONSTRAIN(Water)
+        3       RES_CONSTRAIN(Land)
+        2.5     RES_CONSTRAIN(Labor)
+
+
+---- VPROFIT  total profit ($)
+
+VPROFIT
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       PROFIT
+
+GAMS 47.6.0  c2de9d6d Sep 12, 2024          WEX-WEI x86 64bit/MS Windows - 09/24/24 16:03:32 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE PLANTING Using LP From line 70
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.200E+04, 4.000E+06] - Zero values observed as well
+Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 2.000E+03]
+
+GAMS 47.6.0  c2de9d6d Sep 12, 2024          WEX-WEI x86 64bit/MS Windows - 09/24/24 16:03:32 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE PLANTING Using LP From line 70
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            4
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES            3
+NON ZERO ELEMENTS             9
+
+
+GENERATION TIME      =        0.015 SECONDS      4 MB  47.6.0 c2de9d6d WEX-WEI
+GAMS 47.6.0  c2de9d6d Sep 12, 2024          WEX-WEI x86 64bit/MS Windows - 09/24/24 16:03:32 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE PLANTING Using LP From line 70
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   PLANTING            OBJECTIVE  VPROFIT
+     TYPE    LP                  DIRECTION  MAXIMIZE
+     SOLVER  CPLEX               FROM LINE  70
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE            20000.0000
+
+ RESOURCE USAGE, LIMIT          0.000 10000000000.000
+ ITERATION COUNT, LIMIT         3    2147483647
+*** This solver runs with a community license.
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.1.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- LP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.01 ticks)
+
+
+Optimal solution found
+Objective:        20000.000000
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU PROFIT              .              .              .             1.0000      
+
+  PROFIT  Total profit ($) and objective function value
+
+---- EQU RES_CONSTRAIN  Resource Constraints
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+Water        -INF      4000000.0000   4000000.0000         0.0020      
+Land         -INF        12000.0000     12000.0000         1.0000      
+Labor        -INF        14000.0000     17500.0000          .          
+
+---- VAR X  plants planted (Number)
+
+                LOWER          LEVEL          UPPER         MARGINAL
+
+Eggplant          .          2400.0000        +INF             .          
+Tomatoes          .           800.0000        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR VPROFIT           -INF        20000.0000        +INF             .          
+
+  VPROFIT  total profit ($)
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+
+
+EXECUTION TIME       =        0.047 SECONDS      4 MB  47.6.0 c2de9d6d WEX-WEI
+
+
+USER: CEE 6410 Water Resources Systems Analysis      G240923|0002AO-GEN
+      Utah State University, Utah Water Research Laboratory     DCE3763
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      C:\Users\Tiger Khanal\Documents\GAMS\Studio\workspace\Ex2-2.gms
+Output     C:\Users\Tiger Khanal\Documents\GAMS\Studio\workspace\Ex2-2.lst
