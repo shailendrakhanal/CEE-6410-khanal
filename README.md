@@ -10,5 +10,5 @@
 This repository contains GAMS files and related project code for the CEE-6410 class at Utah State University. The project focuses on developing optimization models using GAMS.
 
 ## Repository Contents
-- `Ex2-1.gms`: Initial optimization problem setup.
+- `Ex2-2.gms`: Initial optimization problem setup.
 - `README.md`: Description of the repository contents.
