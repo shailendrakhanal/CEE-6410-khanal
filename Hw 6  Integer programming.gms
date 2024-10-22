@@ -1,5 +1,8 @@
 $ontext
 Irrigation problem with reservoir and pump options 
+
+shailedra khanal    
+s.khanalusu.edu
 $offtext
 
 * 1. Define Sets
