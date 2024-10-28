@@ -5,121 +5,80 @@ shailedra khanal
 s.khanalusu.edu
 $offtext
 
-* 1. Define Sets
-SETS
-    t       /1*2/     
-    runs    /r1*r4/;     
+* Sets and Parameters
+SET t /1*2/; 
 
-* 2. Define Parameters
-PARAMETERS
-    Qt(t)          /1 600, 2 200/     
-    Demand(t)      /1 1.0, 2 3.0/      
-    HighDamCost    /10000/          
-    LowDamCost     /6000/            
-    PumpCost       /8000/             
-    OperatingCost  /20/                
-    RevenuePerAcre /300/                
-    DaysPerSeason  /180/                 
-    PumpHoursPerDay /6/;                
+* Parameters
+SCALARS
+    revenue_per_acre " Revenue per acre" /300/ 
+    high_dam_cost "Annual cost of high dam"  /10000/       
+    low_dam_cost "Annual cost of low dam" /6000/        
+    pump_capital_cost  "Pump installation cost"   /8000/    
+    pump_operating_cost   "Operating cost per acre-foot for pump"   /20/   
+    high_dam_capacity  "Capacity of high dam in acre-feet"  /700/   
+    low_dam_capacity  "Capacity of low dam in acre-feet"    /300/      
+    pump_capacity_per_day  "Pump capacity per day in acre-feet"   /2.2/ 
+    days_in_season  "Days in a 6-month season"  /180/;       
 
-* Programming Data
 PARAMETER
-    PumpCapacity(runs)   Pump capacity per day (acre-feet per day);
+    river_inflow(t)"Seasonal river inflows" /1 600, 2 200/      
+    irrigation_demand(t)   "Irrigation demand per acre in each season"    /1 1.0, 2 3.0/; 
 
-PumpCapacity(runs) = 2.2 - 0.5*(ord(runs)-1);
+* Variables
+BINARY VARIABLES
+* Binary variables for high dam, low dam, and pump
+    I_H, I_L, I_P;  
 
-DISPLAY PumpCapacity;
+POSITIVE VARIABLES
+* Water released from reservoir for direct irrigation
+    R_irrigation(t)
+* Water released into groundwater
+    R_groundwater(t)
+* Water pumped from groundwater
+    P(t)
+* Total acres irrigated
+    A           ;    
 
-* 3. Define Variables
-VARIABLES
-    X1, X2, Y   
-    I(t)         
-    S(t)          
-    Z;            
+FREE VARIABLE
+*Objective function
+ Z;   
 
-BINARY VARIABLES X1, X2, Y;
-POSITIVE VARIABLES I, S;
+* Objective Function
+EQUATION obj;
+obj.. Z =E= revenue_per_acre * A
+          - (high_dam_cost * I_H + low_dam_cost * I_L + pump_capital_cost * I_P)
+          - pump_operating_cost * SUM(t, P(t));
 
-* 4. Declaring the Equations 
+* Constraints
 EQUATIONS
-    PROFIT                      * Objective function
-    water_balance1              * Water balance for season 1
-    water_balance2              * Water balance for season 2
-    irrigation_demand1          * Irrigation demand for season 1
-    irrigation_demand2          * Irrigation demand for season 2
-    reservoir_capacity          * Storage capacity constraint
-    pump_limit1                 * Pump capacity limit for season 1
-    pump_limit2                 * Pump capacity limit for season 2
-    dam_choice                  * Only one dam can be built   ;
+    demand_constraint(t)          * Water demand constraint for each season
+    reservoir_capacity_constraint(t)  * Reservoir capacity constraint
+    groundwater_flow_constraint(t)    * Effective groundwater flow available for pumping
+    pump_capacity_constraint(t)       * Pump capacity per season
+    reservoir_selection_constraint    * Only one reservoir can be selected
+    water_balance_constraint(t)      * Reservoir inflow equals releases ;
 
-* Scalar for pump capacity 
-SCALAR current_pump_capacity /0/;
+* Demand Constraints
+demand_constraint(t).. R_irrigation(t) + P(t) =G= irrigation_demand(t) * A;
 
-* Defining the logic of each equation
-PROFIT..
-    Z =E= RevenuePerAcre * SUM(t, I(t)/ Demand(t)) 
-         - HighDamCost * X1
-         - LowDamCost * X2
-         - PumpCost * Y
-         - OperatingCost * current_pump_capacity * PumpHoursPerDay * DaysPerSeason * Y;
+* Reservoir Capacity Constraints
+reservoir_capacity_constraint(t).. R_irrigation(t) + R_groundwater(t) =L= high_dam_capacity * I_H + low_dam_capacity * I_L;
 
-water_balance1..
-    S('1') =E= Qt('1') - I('1') + current_pump_capacity * Y;
+* Groundwater Flow Augmentation
+groundwater_flow_constraint(t).. P(t) =L= R_groundwater(t) + 360;
 
-water_balance2..
-    S('2') =E= S('1') + Qt('2') - I('2') + current_pump_capacity * Y;
+* Pump Capacity Constraints
+pump_capacity_constraint(t).. P(t) =L= pump_capacity_per_day * days_in_season * I_P;
 
-irrigation_demand1..
-    I('1') =G= Demand('1');
+* Single Reservoir Selection Constraint
+reservoir_selection_constraint.. I_H + I_L =L= 1;
 
-irrigation_demand2..
-    I('2') =G= Demand('2');
+* Water Balance Constraints
+water_balance_constraint(t).. river_inflow(t) =E= R_irrigation(t) + R_groundwater(t);
 
-reservoir_capacity..
-    S('1') =L= 700 * X1 + 300 * X2;
+* Model and Solve
+MODEL reservoir_model /all/;
+SOLVE reservoir_model USING MIP MAXIMIZING Z;
 
-pump_limit1..
-        I('1') =L= current_pump_capacity  * PumpHoursPerDay * DaysPerSeason * Y;
-
-pump_limit2..
-        I('2') =L= current_pump_capacity  * PumpHoursPerDay * DaysPerSeason * Y;
-
-dam_choice..
-    X1 + X2 =E= 1;
-
-
-* 5. Define the Model
-MODEL irrigation_problem /ALL/;
-
-
-* Parameters to store results
-PARAMETERS
-    ObjFunc(runs)           Objective function values ($)
-    DecVars_X1(runs)        Decision variable X1 (High Dam decision)
-    DecVars_X2(runs)        Decision variable X2 (Low Dam decision)
-    DecVars_Y(runs)         Decision variable Y (Pump decision)
-    DecVars_I(runs,t)       Irrigation amounts per season
-    DecVars_S(runs,t)       Storage amounts per season
-    current_pump_capacity   Declare current pump capacity;
-* 6. Implementing the Loop (with Parameter Updates, No Equation Redefinition)
-LOOP(runs,
-
-* Update parameters for each run
-current_pump_capacity = PumpCapacity(runs);
-    
-   
-* Solve the model
-    SOLVE irrigation_problem USING MIP MAXIMIZING Z;
-
-
-* Store the results
-    ObjFunc(runs)        = Z.L;
-    DecVars_X1(runs)     = X1.L;
-    DecVars_X2(runs)     = X2.L;
-    DecVars_Y(runs)      = Y.L;
-    DecVars_I(runs,t)    = I.L(t);
-    DecVars_S(runs,t)    = S.L(t);
-);
-
-* 7. Display Results
-DISPLAY PumpCapacity, ObjFunc, DecVars_X1, DecVars_X2, DecVars_Y, DecVars_I, DecVars_S;
+* Display results
+DISPLAY Z.l, I_H.l, I_L.l, I_P.l, R_irrigation.l, R_groundwater.l, P.l, A.l;* Sets and Parameters
